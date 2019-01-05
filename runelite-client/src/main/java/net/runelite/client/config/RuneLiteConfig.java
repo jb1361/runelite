@@ -197,6 +197,17 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "leftSidebar",
+			name = "Left side sidebar",
+			description = "Toggles the sidebar being on the left side",
+			position = 26
+	)
+	default boolean leftSideSidebar()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "fontType",
 		name = "Dynamic Overlay Font",
 		description = "Configures what font type is used for in-game overlays such as player name, ground items, etc.",
