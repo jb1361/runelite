@@ -46,6 +46,7 @@ import net.runelite.api.MainBufferProvider;
 import net.runelite.api.RenderOverview;
 import net.runelite.api.Renderable;
 import net.runelite.api.WorldMapManager;
+import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.hooks.Callbacks;
 import net.runelite.api.hooks.DrawCallbacks;
@@ -81,6 +82,7 @@ public class Hooks implements Callbacks
 	private static final OverlayRenderer renderer = injector.getInstance(OverlayRenderer.class);
 
 	private static final GameTick GAME_TICK = new GameTick();
+	private static final BeforeRender BEFORE_RENDER = new BeforeRender();
 
 	@Inject
 	private EventBus eventBus;
@@ -149,6 +151,8 @@ public class Hooks implements Callbacks
 			client.setTickCount(tick + 1);
 		}
 
+		eventBus.post(BEFORE_RENDER);
+
 		clientThread.invoke();
 
 		long now = System.currentTimeMillis();
@@ -182,8 +186,8 @@ public class Hooks implements Callbacks
 	 * When the world map opens it loads about ~100mb of data into memory, which
 	 * represents about half of the total memory allocated by the client.
 	 * This gets cached and never released, which causes GC pressure which can affect
-	 * performance. This method reinitailzies the world map cache, which allows the
-	 * data to be garbage collecged, and causes the map data from disk each time
+	 * performance. This method reinitializes the world map cache, which allows the
+	 * data to be garbage collected, and causes the map data from disk each time
 	 * is it opened.
 	 */
 	private void checkWorldMap()
@@ -448,6 +452,11 @@ public class Hooks implements Callbacks
 		// but having the game tick event after all packets
 		// have been processed is typically more useful.
 		shouldProcessGameTick = true;
+		// Replay deferred events, otherwise if two npc
+		// update packets get processed in one frame, a
+		// despawn event could be published prior to the
+		// spawn event, which is deferred
+		deferredEventBus.replay();
 	}
 
 	public static void renderDraw(Renderable renderable, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)

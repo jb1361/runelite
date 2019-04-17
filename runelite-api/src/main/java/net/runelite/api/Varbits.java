@@ -152,6 +152,15 @@ public enum Varbits
 	DIARY_WILDERNESS_ELITE(4469),
 
 	/**
+	 * Kourend house favours
+	 */
+	KOUREND_FAVOR_ARCEUUS(4896),
+	KOUREND_FAVOR_HOSIDIUS(4895),
+	KOUREND_FAVOR_LOVAKENGJ(4898),
+	KOUREND_FAVOR_PISCARILIUS(4899),
+	KOUREND_FAVOR_SHAYZIEN(4894),
+
+	/**
 	 * Equipped weapon type
 	 */
 	EQUIPPED_WEAPON_TYPE(357),
@@ -381,6 +390,15 @@ public enum Varbits
 	FARMING_4772(4772),
 	FARMING_4773(4773),
 	FARMING_4774(4774),
+	FARMING_4775(4775),
+	FARMING_7904(7904),
+	FARMING_7905(7905),
+	FARMING_7906(7906),
+	FARMING_7907(7907),
+	FARMING_7908(7908),
+	FARMING_7909(7909),
+	FARMING_7910(7910),
+	FARMING_7911(7911),
 
 	/**
 	 * Transmog controllers for grapes
@@ -437,7 +455,32 @@ public enum Varbits
 	/**
 	 * Spell cooldowns
 	 */
-	VENGEANCE_COOLDOWN(2451);
+	VENGEANCE_COOLDOWN(2451),
+
+	/**
+	 * Amount of items in each bank tab
+	 */
+	BANK_TAB_ONE_COUNT(4171),
+	BANK_TAB_TWO_COUNT(4172),
+	BANK_TAB_THREE_COUNT(4173),
+	BANK_TAB_FOUR_COUNT(4174),
+	BANK_TAB_FIVE_COUNT(4175),
+	BANK_TAB_SIX_COUNT(4176),
+	BANK_TAB_SEVEN_COUNT(4177),
+	BANK_TAB_EIGHT_COUNT(4178),
+	BANK_TAB_NINE_COUNT(4179),
+
+	/**
+	 * Type of GE offer currently being created
+	 * 0 = buy
+	 * 1 = sell
+	 */
+	GE_OFFER_CREATION_TYPE(4397),
+
+	/**
+	 * The active tab within the quest interface
+	 */
+	QUEST_TAB(8168);
 
 	/**
 	 * The raw varbit ID.

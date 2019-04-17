@@ -25,12 +25,12 @@
  */
 package net.runelite.client.plugins.cooking;
 
+import com.google.inject.Provides;
 import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 import lombok.AccessLevel;
 import lombok.Getter;
-import com.google.inject.Provides;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
@@ -102,14 +102,19 @@ public class CookingPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (event.getType() != ChatMessageType.FILTERED)
+		if (event.getType() != ChatMessageType.SPAM)
 		{
 			return;
 		}
 
 		final String message = event.getMessage();
 
-		if (message.startsWith("You successfully cook") || message.startsWith("You successfully bake") || message.startsWith("You manage to cook") || message.startsWith("You roast a"))
+		if (message.startsWith("You successfully cook")
+			|| message.startsWith("You successfully bake")
+			|| message.startsWith("You manage to cook")
+			|| message.startsWith("You roast a")
+			|| message.startsWith("You cook")
+			|| message.startsWith("You squeeze the grapes into the jug"))
 		{
 			if (session == null)
 			{

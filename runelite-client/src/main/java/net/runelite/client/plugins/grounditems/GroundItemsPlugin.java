@@ -25,15 +25,15 @@
  */
 package net.runelite.client.plugins.grounditems;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.awt.Rectangle;
 import static java.lang.Boolean.TRUE;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,6 +58,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Scene;
 import net.runelite.api.Tile;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.GameStateChanged;
@@ -81,9 +82,11 @@ import net.runelite.client.plugins.grounditems.config.MenuHighlightMode;
 import static net.runelite.client.plugins.grounditems.config.MenuHighlightMode.BOTH;
 import static net.runelite.client.plugins.grounditems.config.MenuHighlightMode.NAME;
 import static net.runelite.client.plugins.grounditems.config.MenuHighlightMode.OPTION;
+import net.runelite.client.plugins.grounditems.config.ValueCalculationMode;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.StackFormatter;
+import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 	name = "Ground Items",
@@ -92,16 +95,17 @@ import net.runelite.client.util.StackFormatter;
 )
 public class GroundItemsPlugin extends Plugin
 {
-	private static final Splitter COMMA_SPLITTER = Splitter
-		.on(",")
-		.omitEmptyStrings()
-		.trimResults();
-
-	private static final Joiner COMMA_JOINER = Joiner.on(",").skipNulls();
 	// Used when getting High Alchemy value - multiplied by general store price.
 	private static final float HIGH_ALCHEMY_CONSTANT = 0.6f;
 	// ItemID for coins
 	private static final int COINS = ItemID.COINS_995;
+	// Ground item menu options
+	private static final int FIRST_OPTION = MenuAction.GROUND_ITEM_FIRST_OPTION.getId();
+	private static final int SECOND_OPTION = MenuAction.GROUND_ITEM_SECOND_OPTION.getId();
+	private static final int THIRD_OPTION = MenuAction.GROUND_ITEM_THIRD_OPTION.getId(); // this is Take
+	private static final int FOURTH_OPTION = MenuAction.GROUND_ITEM_FOURTH_OPTION.getId();
+	private static final int FIFTH_OPTION = MenuAction.GROUND_ITEM_FIFTH_OPTION.getId();
+	private static final int EXAMINE_ITEM = MenuAction.EXAMINE_ITEM_GROUND.getId();
 
 	@Getter(AccessLevel.PACKAGE)
 	@Setter(AccessLevel.PACKAGE)
@@ -222,9 +226,12 @@ public class GroundItemsPlugin extends Plugin
 			existing.setQuantity(existing.getQuantity() + groundItem.getQuantity());
 		}
 
-		boolean isHighlighted = config.highlightedColor().equals(getHighlighted(groundItem.getName(),
-				groundItem.getGePrice(), groundItem.getHaPrice()));
-		if (config.notifyHighlightedDrops() && isHighlighted)
+		boolean shouldNotify = !config.onlyShowLoot() && config.highlightedColor().equals(getHighlighted(
+			groundItem.getName(),
+			groundItem.getGePrice(),
+			groundItem.getHaPrice()));
+
+		if (config.notifyHighlightedDrops() && shouldNotify)
 		{
 			notifyHighlightedItem(groundItem);
 		}
@@ -284,6 +291,54 @@ public class GroundItemsPlugin extends Plugin
 		lootReceived(items);
 	}
 
+	@Subscribe
+	public void onClientTick(ClientTick event)
+	{
+		if (!config.collapseEntries())
+		{
+			return;
+		}
+
+		final MenuEntry[] menuEntries = client.getMenuEntries();
+		final List<MenuEntryWithCount> newEntries = new ArrayList<>(menuEntries.length);
+
+		outer:
+		for (int i = menuEntries.length - 1; i >= 0; i--)
+		{
+			MenuEntry menuEntry = menuEntries[i];
+
+			int menuType = menuEntry.getType();
+			if (menuType == FIRST_OPTION || menuType == SECOND_OPTION || menuType == THIRD_OPTION
+				|| menuType == FOURTH_OPTION || menuType == FIFTH_OPTION || menuType == EXAMINE_ITEM)
+			{
+				for (MenuEntryWithCount entryWCount : newEntries)
+				{
+					if (entryWCount.getEntry().equals(menuEntry))
+					{
+						entryWCount.increment();
+						continue outer;
+					}
+				}
+			}
+
+			newEntries.add(new MenuEntryWithCount(menuEntry));
+		}
+
+		Collections.reverse(newEntries);
+
+		client.setMenuEntries(newEntries.stream().map(e ->
+		{
+			final MenuEntry entry = e.getEntry();
+			final int count = e.getCount();
+			if (count > 1)
+			{
+				entry.setTarget(entry.getTarget() + " x " + count);
+			}
+
+			return entry;
+		}).toArray(MenuEntry[]::new));
+	}
+
 	private void lootReceived(Collection<ItemStack> items)
 	{
 		for (ItemStack itemStack : items)
@@ -294,6 +349,16 @@ public class GroundItemsPlugin extends Plugin
 			if (groundItem != null)
 			{
 				groundItem.setMine(true);
+
+				boolean shouldNotify = config.onlyShowLoot() && config.highlightedColor().equals(getHighlighted(
+					groundItem.getName(),
+					groundItem.getGePrice(),
+					groundItem.getHaPrice()));
+
+				if (config.notifyHighlightedDrops() && shouldNotify)
+				{
+					notifyHighlightedItem(groundItem);
+				}
 			}
 		}
 	}
@@ -335,10 +400,10 @@ public class GroundItemsPlugin extends Plugin
 	private void reset()
 	{
 		// gets the hidden items from the text box in the config
-		hiddenItemList = COMMA_SPLITTER.splitToList(config.getHiddenItems());
+		hiddenItemList = Text.fromCSV(config.getHiddenItems());
 
 		// gets the highlighted items from the text box in the config
-		highlightedItemsList = COMMA_SPLITTER.splitToList(config.getHighlightItems());
+		highlightedItemsList = Text.fromCSV(config.getHighlightItems());
 
 		highlightedItems = CacheBuilder.newBuilder()
 			.maximumSize(512L)
@@ -384,7 +449,7 @@ public class GroundItemsPlugin extends Plugin
 	{
 		if (config.itemHighlightMode() != OVERLAY
 			&& event.getOption().equals("Take")
-			&& event.getType() == MenuAction.GROUND_ITEM_THIRD_OPTION.getId())
+			&& event.getType() == THIRD_OPTION)
 		{
 			int itemId = event.getIdentifier();
 			Scene scene = client.getScene();
@@ -469,8 +534,8 @@ public class GroundItemsPlugin extends Plugin
 			items.add(item);
 		}
 
-		config.setHiddenItems(COMMA_JOINER.join(hiddenItemSet));
-		config.setHighlightedItem(COMMA_JOINER.join(highlightedItemSet));
+		config.setHiddenItems(Text.toCSV(hiddenItemSet));
+		config.setHighlightedItem(Text.toCSV(highlightedItemSet));
 	}
 
 	Color getHighlighted(String item, int gePrice, int haPrice)
@@ -486,11 +551,29 @@ public class GroundItemsPlugin extends Plugin
 			return null;
 		}
 
+		ValueCalculationMode mode = config.valueCalculationMode();
 		for (Map.Entry<Integer, Color> entry : priceChecks.entrySet())
 		{
-			if (gePrice > entry.getKey() || haPrice > entry.getKey())
+			switch (mode)
 			{
-				return entry.getValue();
+				case GE:
+					if (gePrice > entry.getKey())
+					{
+						return entry.getValue();
+					}
+					break;
+				case HA:
+					if (haPrice > entry.getKey())
+					{
+						return entry.getValue();
+					}
+					break;
+				default: // case HIGHEST
+					if (gePrice > entry.getKey() || haPrice > entry.getKey())
+					{
+						return entry.getValue();
+					}
+					break;
 			}
 		}
 

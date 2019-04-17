@@ -131,7 +131,7 @@ public class WorldHopperPlugin extends Plugin
 	@Inject
 	private WorldHopperConfig config;
 
-	private final ScheduledExecutorService hopperExecutorService = new ExecutorServiceExceptionLogger(Executors.newSingleThreadScheduledExecutor());
+	private ScheduledExecutorService hopperExecutorService;
 
 	private NavigationButton navButton;
 	private WorldSwitcherPanel panel;
@@ -200,7 +200,10 @@ public class WorldHopperPlugin extends Plugin
 			clientToolbar.addNavigation(navButton);
 		}
 
+		panel.setFilterMode(config.subscriptionFilter());
 		worldResultFuture = executorService.scheduleAtFixedRate(this::tick, 0, WORLD_FETCH_TIMER, TimeUnit.MINUTES);
+
+		hopperExecutorService = new ExecutorServiceExceptionLogger(Executors.newSingleThreadScheduledExecutor());
 		pingFuture = hopperExecutorService.scheduleAtFixedRate(this::pingWorlds, WORLD_PING_TIMER, WORLD_PING_TIMER, TimeUnit.MINUTES);
 	}
 
@@ -221,6 +224,7 @@ public class WorldHopperPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 
 		hopperExecutorService.shutdown();
+		hopperExecutorService = null;
 	}
 
 	@Subscribe
@@ -249,6 +253,10 @@ public class WorldHopperPlugin extends Plugin
 					{
 						SwingUtilities.invokeLater(() -> panel.hidePing());
 					}
+					break;
+				case "subscriptionFilter":
+					panel.setFilterMode(config.subscriptionFilter());
+					updateList();
 					break;
 			}
 		}
@@ -582,7 +590,7 @@ public class WorldHopperPlugin extends Plugin
 				.build();
 
 			chatMessageManager.queue(QueuedMessage.builder()
-				.type(ChatMessageType.GAME)
+				.type(ChatMessageType.CONSOLE)
 				.runeLiteFormattedMessage(chatMessage)
 				.build());
 		}
@@ -616,20 +624,23 @@ public class WorldHopperPlugin extends Plugin
 			return;
 		}
 
-		String chatMessage = new ChatMessageBuilder()
-			.append(ChatColorType.NORMAL)
-			.append("Quick-hopping to World ")
-			.append(ChatColorType.HIGHLIGHT)
-			.append(Integer.toString(world.getId()))
-			.append(ChatColorType.NORMAL)
-			.append("..")
-			.build();
+		if (config.showWorldHopMessage())
+		{
+			String chatMessage = new ChatMessageBuilder()
+				.append(ChatColorType.NORMAL)
+				.append("Quick-hopping to World ")
+				.append(ChatColorType.HIGHLIGHT)
+				.append(Integer.toString(world.getId()))
+				.append(ChatColorType.NORMAL)
+				.append("..")
+				.build();
 
-		chatMessageManager
-			.queue(QueuedMessage.builder()
-				.type(ChatMessageType.GAME)
-				.runeLiteFormattedMessage(chatMessage)
-				.build());
+			chatMessageManager
+				.queue(QueuedMessage.builder()
+					.type(ChatMessageType.CONSOLE)
+					.runeLiteFormattedMessage(chatMessage)
+					.build());
+		}
 
 		quickHopTargetWorld = rsWorld;
 		displaySwitcherAttempts = 0;
@@ -660,7 +671,7 @@ public class WorldHopperPlugin extends Plugin
 
 				chatMessageManager
 					.queue(QueuedMessage.builder()
-						.type(ChatMessageType.GAME)
+						.type(ChatMessageType.CONSOLE)
 						.runeLiteFormattedMessage(chatMessage)
 						.build());
 
@@ -677,7 +688,7 @@ public class WorldHopperPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (event.getType() != ChatMessageType.SERVER)
+		if (event.getType() != ChatMessageType.GAMEMESSAGE)
 		{
 			return;
 		}

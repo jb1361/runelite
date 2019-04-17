@@ -37,7 +37,9 @@ import com.jogamp.opengl.GLException;
 import com.jogamp.opengl.GLProfile;
 import java.awt.Canvas;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.nio.ByteBuffer;
@@ -46,6 +48,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.function.Function;
 import javax.inject.Inject;
+import jogamp.nativewindow.SurfaceScaleUtils;
 import jogamp.nativewindow.jawt.x11.X11JAWTWindow;
 import jogamp.newt.awt.NewtFactoryAWT;
 import lombok.extern.slf4j.Slf4j;
@@ -71,18 +74,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
-import static net.runelite.client.plugins.gpu.GLUtil.glDeleteBuffer;
-import static net.runelite.client.plugins.gpu.GLUtil.glDeleteFrameBuffer;
-import static net.runelite.client.plugins.gpu.GLUtil.glDeleteRenderbuffers;
-import static net.runelite.client.plugins.gpu.GLUtil.glDeleteTexture;
-import static net.runelite.client.plugins.gpu.GLUtil.glDeleteVertexArrays;
-import static net.runelite.client.plugins.gpu.GLUtil.glGenBuffers;
-import static net.runelite.client.plugins.gpu.GLUtil.glGetInteger;
-import static net.runelite.client.plugins.gpu.GLUtil.glGenFrameBuffer;
-import static net.runelite.client.plugins.gpu.GLUtil.glGenRenderbuffer;
-import static net.runelite.client.plugins.gpu.GLUtil.glGenTexture;
-import static net.runelite.client.plugins.gpu.GLUtil.glGenVertexArrays;
-import static net.runelite.client.plugins.gpu.GLUtil.inputStreamToString;
+import static net.runelite.client.plugins.gpu.GLUtil.*;
 import net.runelite.client.plugins.gpu.config.AntiAliasingMode;
 import net.runelite.client.plugins.gpu.template.Template;
 import net.runelite.client.ui.DrawManager;
@@ -91,7 +83,8 @@ import net.runelite.client.util.OSType;
 @PluginDescriptor(
 	name = "GPU",
 	description = "Utilizes the GPU",
-	enabledByDefault = false
+	enabledByDefault = false,
+	tags = {"fog", "draw distance"}
 )
 @Slf4j
 public class GpuPlugin extends Plugin implements DrawCallbacks
@@ -100,7 +93,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private static final int MAX_TRIANGLE = 4096;
 	private static final int SMALL_TRIANGLE_COUNT = 512;
 	private static final int FLAG_SCENE_BUFFER = Integer.MIN_VALUE;
-	private static final int MAX_DISTANCE = 90;
+	static final int MAX_DISTANCE = 90;
+	static final int MAX_FOG_DEPTH = 100;
 
 	@Inject
 	private Client client;
@@ -215,6 +209,10 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private int centerY;
 
 	// Uniforms
+	private int uniUseFog;
+	private int uniFogColor;
+	private int uniFogDepth;
+	private int uniDrawDistance;
 	private int uniProjectionMatrix;
 	private int uniBrightness;
 	private int uniTex;
@@ -506,6 +504,10 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		uniProjectionMatrix = gl.glGetUniformLocation(glProgram, "projectionMatrix");
 		uniBrightness = gl.glGetUniformLocation(glProgram, "brightness");
 		uniSmoothBanding = gl.glGetUniformLocation(glProgram, "smoothBanding");
+		uniUseFog = gl.glGetUniformLocation(glProgram, "useFog");
+		uniFogColor = gl.glGetUniformLocation(glProgram, "fogColor");
+		uniFogDepth = gl.glGetUniformLocation(glProgram, "fogDepth");
+		uniDrawDistance = gl.glGetUniformLocation(glProgram, "drawDistance");
 
 		uniTex = gl.glGetUniformLocation(glUiProgram, "tex");
 		uniTextures = gl.glGetUniformLocation(glProgram, "textures");
@@ -723,7 +725,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		scene.setDrawDistance(drawDistance);
 	}
 
-
 	public void drawScenePaint(int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z,
 							SceneTilePaint paint, int tileZ, int tileX, int tileY,
 							int zoom, int centerX, int centerY)
@@ -849,6 +850,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		lastAntiAliasingMode = antiAliasingMode;
 
 		// Clear scene
+		int sky = client.getSkyboxColor();
+		gl.glClearColor((sky >> 16 & 0xFF) / 255f, (sky >> 8 & 0xFF) / 255f, (sky & 0xFF) / 255f, 1f);
 		gl.glClear(gl.GL_COLOR_BUFFER_BIT);
 
 		// Upload buffers
@@ -1010,9 +1013,16 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				renderWidthOff       = (int) Math.floor(scaleFactorX * (renderWidthOff )) - padding;
 			}
 
-			gl.glViewport(renderWidthOff, renderCanvasHeight - renderViewportHeight - renderHeightOff, renderViewportWidth, renderViewportHeight);
+			glDpiAwareViewport(renderWidthOff, renderCanvasHeight - renderViewportHeight - renderHeightOff, renderViewportWidth, renderViewportHeight);
 
 			gl.glUseProgram(glProgram);
+
+			final int drawDistance = Math.max(0, Math.min(MAX_DISTANCE, config.drawDistance()));
+			final int fogDepth = config.fogDepth();
+			gl.glUniform1i(uniUseFog, fogDepth > 0 ? 1 : 0);
+			gl.glUniform4f(uniFogColor, (sky >> 16 & 0xFF) / 255f, (sky >> 8 & 0xFF) / 255f, (sky & 0xFF) / 255f, 1f);
+			gl.glUniform1i(uniFogDepth, fogDepth);
+			gl.glUniform1i(uniDrawDistance, drawDistance * Perspective.LOCAL_TILE_SIZE);
 
 			// Brightness happens to also be stored in the texture provider, so we use that
 			gl.glUniform1f(uniBrightness, (float) textureProvider.getBrightness());
@@ -1133,16 +1143,14 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, width, height, gl.GL_BGRA, gl.GL_UNSIGNED_INT_8_8_8_8_REV, interfaceBuffer);
 		}
 
-		gl.glBindTexture(gl.GL_TEXTURE_2D, interfaceTexture);
-
 		if (client.isStretchedEnabled())
 		{
 			Dimension dim = client.getStretchedDimensions();
-			gl.glViewport(0, 0, dim.width, dim.height);
+			glDpiAwareViewport(0, 0, dim.width, dim.height);
 		}
 		else
 		{
-			gl.glViewport(0, 0, canvasWidth, canvasHeight);
+			glDpiAwareViewport(0, 0, canvasWidth, canvasHeight);
 		}
 
 		// Use the texture bound in the first pass
@@ -1437,4 +1445,18 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		}
 	}
 
+	private int getScaledValue(final double scale, final int value)
+	{
+		return SurfaceScaleUtils.scale(value, (float) scale);
+	}
+
+	private void glDpiAwareViewport(final int x, final int y, final int width, final int height)
+	{
+		final AffineTransform t = ((Graphics2D) canvas.getGraphics()).getTransform();
+		gl.glViewport(
+			getScaledValue(t.getScaleX(), x),
+			getScaledValue(t.getScaleY(), y),
+			getScaledValue(t.getScaleX(), width),
+			getScaledValue(t.getScaleY(), height));
+	}
 }

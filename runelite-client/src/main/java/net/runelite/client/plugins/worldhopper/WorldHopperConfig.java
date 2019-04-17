@@ -90,4 +90,26 @@ public interface WorldHopperConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "showMessage",
+		name = "Show world hop message in chat",
+		description = "Shows what world is being hopped to in the chat",
+		position = 5
+	)
+	default boolean showWorldHopMessage()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "subscriptionFilter",
+		name = "Show subscription types",
+		description = "Only show free worlds, member worlds, or both types of worlds in sidebar",
+		position = 6
+	)
+	default SubscriptionFilterMode subscriptionFilter()
+	{
+		return SubscriptionFilterMode.BOTH;
+	}
 }

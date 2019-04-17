@@ -185,4 +185,37 @@ public interface WorldMapConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = WorldMapPlugin.CONFIG_KEY_RARE_TREE_TOOLTIPS,
+		name = "Show rare tree type",
+		description = "Display the type of rare tree in the icon tooltip",
+		position = 15
+	)
+	default boolean rareTreeTooltips()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = WorldMapPlugin.CONFIG_KEY_RARE_TREE_LEVEL_ICON,
+		name = "Indicate unavailable trees",
+		description = "Indicate rare trees you do not have the level to cut on the icon",
+		position = 16
+	)
+	default boolean rareTreeLevelIcon()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = WorldMapPlugin.CONFIG_KEY_TRANSPORATION_TELEPORT_TOOLTIPS,
+		name = "Show transporation tooltips",
+		description = "Indicates types and destinations of Transporation",
+		position = 17
+	)
+	default boolean transportationTeleportTooltips()
+	{
+		return true;
+	}
 }
