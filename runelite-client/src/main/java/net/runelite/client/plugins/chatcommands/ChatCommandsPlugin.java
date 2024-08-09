@@ -109,6 +109,7 @@ public class ChatCommandsPlugin extends Plugin
 {
 	private static final Pattern KILLCOUNT_PATTERN = Pattern.compile("Your (?<pre>completion count for |subdued |completed )?(?<boss>.+?) (?<post>(?:(?:kill|harvest|lap|completion) )?(?:count )?)is: <col=ff0000>(?<kc>\\d+)</col>");
 	private static final String TEAM_SIZES = "(?<teamsize>\\d+(?:\\+|-\\d+)? players?|Solo)";
+	private static final Pattern TEAM_SIZE = Pattern.compile("(?<teamsize>\\d+(?:\\+|-\\d+)? players?|Solo)");
 	private static final Pattern RAIDS_PB_PATTERN = Pattern.compile("<col=ef20ff>Congratulations - your raid is complete!</col><br>Team size: <col=ff0000>" + TEAM_SIZES + "</col> Duration:</col> <col=ff0000>(?<pb>[0-9:]+(?:\\.[0-9]+)?)</col> \\(new personal best\\)</col>");
 	private static final Pattern RAIDS_DURATION_PATTERN = Pattern.compile("<col=ef20ff>Congratulations - your raid is complete!</col><br>Team size: <col=ff0000>" + TEAM_SIZES + "</col> Duration:</col> <col=ff0000>[0-9:.]+</col> Personal best: </col><col=ff0000>(?<pb>[0-9:]+(?:\\.[0-9]+)?)</col>");
 	private static final Pattern KILL_DURATION_PATTERN = Pattern.compile("(?i)(?:(?:Fight |Lap |Challenge |Corrupted challenge )?duration:|Subdued in|(?<!total )completion time:) <col=[0-9a-f]{6}>[0-9:.]+</col>\\. Personal best: (?:<col=ff0000>)?(?<pb>[0-9:]+(?:\\.[0-9]+)?)");
@@ -533,25 +534,25 @@ public class ChatCommandsPlugin extends Plugin
 		matcher = KILL_DURATION_PATTERN.matcher(message);
 		if (matcher.find())
 		{
-			matchPb(matcher);
+			matchPb(matcher, message);
 		}
 
 		matcher = NEW_PB_PATTERN.matcher(message);
 		if (matcher.find())
 		{
-			matchPb(matcher);
+			matchPb(matcher, message);
 		}
 
 		matcher = RAIDS_PB_PATTERN.matcher(message);
 		if (matcher.find())
 		{
-			matchPb(matcher);
+			matchPb(matcher, message);
 		}
 
 		matcher = RAIDS_DURATION_PATTERN.matcher(message);
 		if (matcher.find())
 		{
-			matchPb(matcher);
+			matchPb(matcher, message);
 		}
 
 		matcher = HS_PB_PATTERN.matcher(message);
@@ -656,15 +657,23 @@ public class ChatCommandsPlugin extends Plugin
 		return timeString + (Math.floor(seconds) == seconds ? String.format("%02d", (int) seconds) : String.format("%05.2f", seconds));
 	}
 
-	private void matchPb(Matcher matcher)
+	private void matchPb(Matcher matcher, String message)
 	{
 		double seconds = timeStringToSeconds(matcher.group("pb"));
 		if (lastBossKill != null)
 		{
 			// Most bosses send boss kill message, and then pb message, so we
-			// use the remembered lastBossKill
-			log.debug("Got personal best for {}: {}", lastBossKill, seconds);
-			setPb(lastBossKill, seconds);
+			// use the remembered lastBossKill and check if the boss has a team
+			Matcher teamSizeMatcher = TEAM_SIZE.matcher(message);
+			String teamSize = "-1";
+
+			if(teamSizeMatcher.find()) {
+				teamSize = teamSizeMatcher.group("teamsize");
+			}
+
+			String bossName = teamSize == "-1" ? lastBossKill : lastBossKill + " " + teamSize;
+			log.debug("Got personal best for {}: {}", bossName, seconds);
+			setPb(bossName, seconds);
 			lastPb = -1;
 			lastTeamSize = null;
 		}
@@ -2286,6 +2295,7 @@ public class ChatCommandsPlugin extends Plugin
 			case "tnm":
 			case "nmare":
 			case "the nightmare":
+			case "nightmare":
 				return "Nightmare 6+ players";
 			case "nm 1":
 			case "nm solo":
