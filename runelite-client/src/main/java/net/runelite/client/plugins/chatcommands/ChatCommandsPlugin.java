@@ -667,7 +667,8 @@ public class ChatCommandsPlugin extends Plugin
 			Matcher teamSizeMatcher = TEAM_SIZE.matcher(message);
 			String teamSize = "-1";
 
-			if(teamSizeMatcher.find()) {
+			if(teamSizeMatcher.find())
+			{
 				teamSize = teamSizeMatcher.group("teamsize");
 			}
 
