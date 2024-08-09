@@ -896,7 +896,7 @@ public class ChatCommandsPlugin extends Plugin
 	private boolean killCountSubmit(ChatInput chatInput, String value)
 	{
 		int idx = value.indexOf(' ');
-		final String boss = longBossName(value.substring(idx + 1));
+		final String boss = longBossName(value.substring(idx + 1), true);
 
 		final int kc = getKc(boss);
 		if (kc <= 0)
@@ -950,7 +950,7 @@ public class ChatCommandsPlugin extends Plugin
 			player = Text.sanitize(chatMessage.getName());
 		}
 
-		search = longBossName(search);
+		search = longBossName(search, true);
 
 		final int kc;
 		try
@@ -1952,6 +1952,11 @@ public class ChatCommandsPlugin extends Plugin
 
 	private static String longBossName(String boss)
 	{
+		return longBossName(boss, false);
+	}
+
+	private static String longBossName(String boss, boolean removeTeamSize)
+	{
 		switch (boss.toLowerCase())
 		{
 			case "corp":
@@ -2297,7 +2302,7 @@ public class ChatCommandsPlugin extends Plugin
 			case "nmare":
 			case "the nightmare":
 			case "nightmare":
-				return "Nightmare 6+ players";
+				return removeTeamSize ? "Nightmare" : "Nightmare 6+ players";
 			case "nm 1":
 			case "nm solo":
 			case "tnm 1":
@@ -2308,25 +2313,25 @@ public class ChatCommandsPlugin extends Plugin
 			case "the nightmare solo":
 			case "nightmare 1":
 			case "nightmare solo":
-				return "Nightmare Solo";
+				return removeTeamSize ? "Nightmare" : "Nightmare Solo";
 			case "nm 3":
 			case "tnm 3":
 			case "nmare 3":
 			case "the nightmare 3":
 			case "nightmare 3":
-				return "Nightmare 3 players";
+				return removeTeamSize ? "Nightmare" : "Nightmare 3 players";
 			case "nm 4":
 			case "tnm 4":
 			case "nmare 4":
 			case "the nightmare 4":
 			case "nightmare 4":
-				return "Nightmare 4 players";
+				return removeTeamSize ? "Nightmare" : "Nightmare 4 players";
 			case "nm 5":
 			case "tnm 5":
 			case "nmare 5":
 			case "the nightmare 5":
 			case "nightmare 5":
-				return "Nightmare 5 players";
+				return removeTeamSize ? "Nightmare" : "Nightmare 5 players";
 
 
 			// Phosani's Nightmare
