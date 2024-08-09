@@ -2286,7 +2286,37 @@ public class ChatCommandsPlugin extends Plugin
 			case "tnm":
 			case "nmare":
 			case "the nightmare":
-				return "Nightmare";
+				return "Nightmare 6+ players";
+			case "nm 1":
+			case "nm solo":
+			case "tnm 1":
+			case "tnm solo":
+			case "nmare 1":
+			case "nmare solo":
+			case "the nightmare 1":
+			case "the nightmare solo":
+			case "nightmare 1":
+			case "nightmare solo":
+				return "Nightmare Solo";
+			case "nm 3":
+			case "tnm 3":
+			case "nmare 3":
+			case "the nightmare 3":
+			case "nightmare 3":
+				return "Nightmare 3 players";
+			case "nm 4":
+			case "tnm 4":
+			case "nmare 4":
+			case "the nightmare 4":
+			case "nightmare 4":
+				return "Nightmare 4 players";
+			case "nm 5":
+			case "tnm 5":
+			case "nmare 5":
+			case "the nightmare 5":
+			case "nightmare 5":
+				return "Nightmare 5 players";
+
 
 			// Phosani's Nightmare
 			case "pnm":
