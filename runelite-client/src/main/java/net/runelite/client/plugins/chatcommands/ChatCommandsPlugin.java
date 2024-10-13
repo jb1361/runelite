@@ -821,7 +821,8 @@ public class ChatCommandsPlugin extends Plugin
 
 								log.debug("Found team-size adventure log PB for {} {}: {}", boss, teamSize, s);
 								// Get Overall Nightmare Pb and update if it is lower
-								if (boss.equals("Nightmare")) {
+								if (boss.equals("Nightmare"))
+								{
 									final double pb = getPb(boss);
 									if (s < pb || pb == 0)
 									{
