@@ -909,14 +909,25 @@ public class ChatCommandsPluginTest
 	{
 		ChatMessage chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Nightmare kill count is: <col=ff0000>1130</col>", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
-
 		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Team size: <col=ff0000>Solo</col> Fight duration: <col=ff0000>3:29</col> (new personal best)", null, 0);
+		chatCommandsPlugin.onChatMessage(chatMessage);
+
+		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Nightmare kill count is: <col=ff0000>1131</col>", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
 		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Team size: <col=ff0000>3 players</col> Fight duration: <col=ff0000>3:30</col> (new personal best)", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
+
+		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Nightmare kill count is: <col=ff0000>1132</col>", null, 0);
+		chatCommandsPlugin.onChatMessage(chatMessage);
 		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Team size: <col=ff0000>4 players</col> Fight duration: <col=ff0000>3:31</col> (new personal best)", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
+
+		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Nightmare kill count is: <col=ff0000>1133</col>", null, 0);
+		chatCommandsPlugin.onChatMessage(chatMessage);
 		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Team size: <col=ff0000>5 players</col> Fight duration: <col=ff0000>3:32</col> (new personal best)", null, 0);
+		chatCommandsPlugin.onChatMessage(chatMessage);
+
+		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Nightmare kill count is: <col=ff0000>1133</col>", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
 		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Team size: <col=ff0000>6+ players</col> Fight duration: <col=ff0000>3:28</col> (new personal best)", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
@@ -927,6 +938,14 @@ public class ChatCommandsPluginTest
 		verify(configManager).setRSProfileConfiguration("personalbest", "nightmare 4 players", 3 * 60 + 31.0);
 		verify(configManager).setRSProfileConfiguration("personalbest", "nightmare 5 players", 3 * 60 + 32.0);
 		verify(configManager).setRSProfileConfiguration("personalbest", "nightmare 6+ players", 3 * 60 + 28.0);
+
+		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Nightmare kill count is: <col=ff0000>1134</col>", null, 0);
+		chatCommandsPlugin.onChatMessage(chatMessage);
+		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Team size: <col=ff0000>3 players</col> Fight duration: <col=ff0000>2:29</col> (new personal best)", null, 0);
+		chatCommandsPlugin.onChatMessage(chatMessage);
+		// Test that the overall best is set
+		verify(configManager).setRSProfileConfiguration("personalbest", "nightmare", 2 * 60 + 29.0);
+		verify(configManager).setRSProfileConfiguration("personalbest", "nightmare 3 players", 2 * 60 + 29.0);
 	}
 
 	@Test

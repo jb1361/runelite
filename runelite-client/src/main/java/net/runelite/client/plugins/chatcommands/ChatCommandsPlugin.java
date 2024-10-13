@@ -677,16 +677,27 @@ public class ChatCommandsPlugin extends Plugin
 			// Most bosses send boss kill message, and then pb message, so we
 			// use the remembered lastBossKill and check if the boss has a team
 			Matcher teamSizeMatcher = TEAM_SIZE.matcher(message);
-			String teamSize = "-1";
+			String teamSize = null;
 
 			if (teamSizeMatcher.find())
 			{
 				teamSize = teamSizeMatcher.group("teamsize");
 			}
 
-			String bossName = teamSize == "-1" ? lastBossKill : lastBossKill + " " + teamSize;
-			log.debug("Got personal best for {}: {}", bossName, seconds);
-			setPb(bossName, seconds);
+			// we set the best overall pb regardless of team size
+			final double pb = getPb(lastBossKill);
+			if (seconds < pb || pb == 0)
+			{
+				log.debug("Setting overall pb (old: {})", pb);
+				setPb(lastBossKill, seconds);
+			}
+			if (teamSize != null)
+			{
+				String bossName = lastBossKill + " " + teamSize;
+				log.debug("Got personal best for {}: {}", bossName, seconds);
+				setPb(bossName, seconds);
+			}
+
 			lastPb = -1;
 			lastTeamSize = null;
 		}
@@ -809,6 +820,15 @@ public class ChatCommandsPlugin extends Plugin
 								}
 
 								log.debug("Found team-size adventure log PB for {} {}: {}", boss, teamSize, s);
+								// Get Overall Nightmare Pb and update if it is lower
+								if (boss.equals("Nightmare")) {
+									final double pb = getPb(boss);
+									if (s < pb || pb == 0)
+									{
+										log.debug("Setting overall pb (old: {})", pb);
+										setPb(boss, s);
+									}
+								}
 								setPb(boss + " " + teamSize, s);
 							}
 							else
@@ -908,7 +928,7 @@ public class ChatCommandsPlugin extends Plugin
 	private boolean killCountSubmit(ChatInput chatInput, String value)
 	{
 		int idx = value.indexOf(' ');
-		final String boss = longBossName(value.substring(idx + 1), true);
+		final String boss = longBossName(value.substring(idx + 1));
 
 		final int kc = getKc(boss);
 		if (kc <= 0)
@@ -962,7 +982,7 @@ public class ChatCommandsPlugin extends Plugin
 			player = Text.sanitize(chatMessage.getName());
 		}
 
-		search = longBossName(search, true);
+		search = longBossName(search);
 
 		final int kc;
 		try
@@ -1964,11 +1984,6 @@ public class ChatCommandsPlugin extends Plugin
 
 	private static String longBossName(String boss)
 	{
-		return longBossName(boss, false);
-	}
-
-	private static String longBossName(String boss, boolean removeTeamSize)
-	{
 		switch (boss.toLowerCase())
 		{
 			case "corp":
@@ -2314,7 +2329,7 @@ public class ChatCommandsPlugin extends Plugin
 			case "nmare":
 			case "the nightmare":
 			case "nightmare":
-				return removeTeamSize ? "Nightmare" : "Nightmare 6+ players";
+				return "Nightmare";
 			case "nm 1":
 			case "nm solo":
 			case "tnm 1":
@@ -2325,26 +2340,31 @@ public class ChatCommandsPlugin extends Plugin
 			case "the nightmare solo":
 			case "nightmare 1":
 			case "nightmare solo":
-				return removeTeamSize ? "Nightmare" : "Nightmare Solo";
+				return "Nightmare Solo";
 			case "nm 3":
 			case "tnm 3":
 			case "nmare 3":
 			case "the nightmare 3":
 			case "nightmare 3":
-				return removeTeamSize ? "Nightmare" : "Nightmare 3 players";
+				return "Nightmare 3 players";
 			case "nm 4":
 			case "tnm 4":
 			case "nmare 4":
 			case "the nightmare 4":
 			case "nightmare 4":
-				return removeTeamSize ? "Nightmare" : "Nightmare 4 players";
+				return "Nightmare 4 players";
 			case "nm 5":
 			case "tnm 5":
 			case "nmare 5":
 			case "the nightmare 5":
 			case "nightmare 5":
-				return removeTeamSize ? "Nightmare" : "Nightmare 5 players";
-
+				return "Nightmare 5 players";
+			case "nm 6":
+			case "tnm 6":
+			case "nmare 6":
+			case "the nightmare 6":
+			case "nightmare 6":
+				return "Nightmare 6+ players";
 
 			// Phosani's Nightmare
 			case "pnm":
