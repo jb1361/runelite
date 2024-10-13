@@ -684,7 +684,7 @@ public class ChatCommandsPlugin extends Plugin
 				teamSize = teamSizeMatcher.group("teamsize");
 			}
 
-			// we set the best overall pb of any team size
+			// we set the best pb of any team size
 			final double pb = getPb(lastBossKill);
 			if (seconds < pb || pb == 0)
 			{
