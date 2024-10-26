@@ -691,7 +691,7 @@ public class ChatCommandsPlugin extends Plugin
 				log.debug("Setting overall pb (old: {}) (new: {})", currentPb, killDuration);
 				setPb(lastBossKill, killDuration);
 			}
-			else if (teamSize == null)
+			else if (killDuration > currentPb && teamSize == null)
 			{
 				// We always assume that the in game message is the source of truth, this covers, rollbacks, bugs, etc
 				setPb(lastBossKill, killDuration);
