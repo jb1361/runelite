@@ -671,7 +671,7 @@ public class ChatCommandsPlugin extends Plugin
 
 	private void matchPb(Matcher matcher, String message)
 	{
-		double seconds = timeStringToSeconds(matcher.group("pb"));
+		double killDuration = timeStringToSeconds(matcher.group("pb"));
 		if (lastBossKill != null)
 		{
 			// Most bosses send boss kill message, and then pb message, so we
@@ -685,17 +685,23 @@ public class ChatCommandsPlugin extends Plugin
 			}
 
 			// we set the best pb of any team size
-			final double pb = getPb(lastBossKill);
-			if (seconds < pb || pb == 0)
+			final double currentPb = getPb(lastBossKill);
+			if (killDuration < currentPb || currentPb == 0)
 			{
-				log.debug("Setting overall pb (old: {})", pb);
-				setPb(lastBossKill, seconds);
+				log.debug("Setting overall pb (old: {}) (new: {})", currentPb, killDuration);
+				setPb(lastBossKill, killDuration);
 			}
+			else if (teamSize == null)
+			{
+				// We always assume that the in game message is the source of truth, this covers, rollbacks, bugs, etc
+				setPb(lastBossKill, killDuration);
+			}
+
 			if (teamSize != null)
 			{
 				String bossName = lastBossKill + " " + teamSize;
-				log.debug("Got personal best for {}: {}", bossName, seconds);
-				setPb(bossName, seconds);
+				log.debug("Got personal best for {}: {}", bossName, killDuration);
+				setPb(bossName, killDuration);
 			}
 
 			lastPb = -1;
@@ -704,7 +710,7 @@ public class ChatCommandsPlugin extends Plugin
 		else
 		{
 			// Some bosses send the pb message, and then the kill message!
-			lastPb = seconds;
+			lastPb = killDuration;
 			try
 			{
 				lastTeamSize = matcher.group("teamsize");
