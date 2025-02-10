@@ -1528,24 +1528,18 @@ public class ChatCommandsPluginTest
 	@Test
 	public void testHueycoatlPb()
 	{
-		ChatMessage chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Hueycoatl kill count is: <col=ff0000>9</col>.", null, 0);
+		testKillCountChatMessage("hueycoatl", "Your Hueycoatl kill count is: <col=ff0000>9</col>.", 9);
+		ChatMessage chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Fight duration: <col=ff0000>2:06</col>. Personal best: 0:51.", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
-		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Fight duration: <col=ff0000>2:06</col>. Personal best: 0:51.", null, 0);
-		chatCommandsPlugin.onChatMessage(chatMessage);
-
-		verify(configManager).setRSProfileConfiguration("killcount", "hueycoatl", 9);
 		verify(configManager).setRSProfileConfiguration("personalbest", "hueycoatl", 0 + 51.);
 	}
 
 	@Test
 	public void testHueycoatlNewPb()
 	{
-		ChatMessage chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Your Hueycoatl kill count is: <col=ff0000>9</col>.", null, 0);
+		testKillCountChatMessage("hueycoatl", "Your Hueycoatl kill count is: <col=ff0000>9</col>.", 9);
+		ChatMessage chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Fight duration: <col=ff0000>0:51</col> (new personal best)", null, 0);
 		chatCommandsPlugin.onChatMessage(chatMessage);
-		chatMessage = new ChatMessage(null, GAMEMESSAGE, "", "Fight duration: <col=ff0000>0:51</col> (new personal best)", null, 0);
-		chatCommandsPlugin.onChatMessage(chatMessage);
-
-		verify(configManager).setRSProfileConfiguration("killcount", "hueycoatl", 9);
 		verify(configManager).setRSProfileConfiguration("personalbest", "hueycoatl", 0 + 51.);
 	}
 
