@@ -35,13 +35,10 @@ import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1566,6 +1563,21 @@ public class ChatCommandsPlugin extends Plugin
 	 */
 	private void itemPriceLookup(ChatMessage chatMessage, String message)
 	{
+
+		long accountHashLong = client.getAccountHash();
+		System.out.println("Account Hash long: " + accountHashLong);
+		String accountHashString = String.valueOf(accountHashLong);
+		System.out.println("Account Hash string: " + accountHashString);
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+		byte[] hash = digest.digest(accountHashString.getBytes(StandardCharsets.UTF_8));
+		System.out.println("Raw Hash: " + hash);
+		System.out.println("Encoded hash:" + Base64.getEncoder().encodeToString(hash));
+
 		if (!config.price())
 		{
 			return;
